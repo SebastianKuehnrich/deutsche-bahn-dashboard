@@ -5,37 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="554fe0cd-0036-4abe-b855-ce2d3fe73237" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/Big_Data_Deutsche_Bahn.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.agent.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.edit.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.streamlit/config.toml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/BONUS3_ABGESCHLOSSEN.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/DASHBOARD_START_GUIDE.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/DATENBEREINIGUNG_ZUSAMMENFASSUNG.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/DATENQUALITAETSANALYSE_ZUSAMMENFASSUNG.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/DATENQUALITAETS_BERICHT.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/PROJEKT_CHECKLISTE.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/PROJEKT_STATUS.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Procfile" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/README_DASHBOARD.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Scripts/Aggregation.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Scripts/Dashboard.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Scripts/data_cleaning.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Scripts/data_detective_analyse.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Scripts/download_data.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Scripts/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Scripts/transformation.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Scripts/use_clean_data.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Tag12_Review_ANTWORTEN.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/db_dashboard.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/railway.toml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Dashboard.py" beforeDir="false" afterPath="$PROJECT_DIR$/Scripts/Dashboard.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -65,6 +36,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "Python.Aggregation.executor": "Run",
     "Python.data_detective_analyse.executor": "Run",
@@ -74,7 +46,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "master"
+    "git-widget-placeholder": "main"
   }
 }]]></component>
   <component name="RecentsManager">

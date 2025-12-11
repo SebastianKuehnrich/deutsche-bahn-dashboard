@@ -70,8 +70,8 @@ st.set_page_config(
 # DATENPFAD-MANAGEMENT
 # ============================================================
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(SCRIPT_DIR, "..", "Data", "deutsche_bahn_data", "monthly_processed_data")
+# Neu:
+DATA_DIR = "Data/deutsche_bahn_data/monthly_processed_data"
 
 
 def get_available_data_files() -> list[str]:
