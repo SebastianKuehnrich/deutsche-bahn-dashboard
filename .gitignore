@@ -8,7 +8,7 @@ build/
 develop-eggs/
 dist/
 downloads/
-eggs/
+egss/
 .eggs/
 lib/
 lib64/
@@ -42,6 +42,12 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Data-Ordner komplett ignorieren
+Data/
+
+# Altes Dashboard-Script ignorieren
+Scripts/dashboard_alt.py
 
 # Cache
 .cache/

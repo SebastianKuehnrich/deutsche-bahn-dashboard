@@ -1,7 +1,8 @@
 # ============================================================
 #
 #   DEUTSCHE BAHN PERFORMANCE DASHBOARD
-#   Version 3.0 - Mit HuggingFace Datenquelle
+#   Tag 12 - Data Transformation Projekt
+#   Version 2.0 - Refactored & Improved
 #
 # ============================================================
 
@@ -9,20 +10,16 @@ from __future__ import annotations
 
 import streamlit as st
 import duckdb
+from duckdb import DuckDBPyConnection
 import pandas as pd
 import os
-import tempfile
-from huggingface_hub import hf_hub_download, list_repo_files
+from glob import glob
 from contextlib import contextmanager
 from typing import Any
 
 # ============================================================
 # KONSTANTEN & KONFIGURATION
 # ============================================================
-
-# HuggingFace Dataset
-HF_REPO_ID = "piebro/deutsche-bahn-data"
-HF_REPO_TYPE = "dataset"
 
 # Schwellenwerte (zentral definiert)
 PUENKTLICH_THRESHOLD_MIN: int = 5
@@ -60,7 +57,7 @@ DEFAULT_TRAIN_TYPES: list[str] = ["ICE", "IC", "RE", "RB", "S"]
 CACHE_TTL_SECONDS: int = 3600  # 1 Stunde
 
 # ============================================================
-# SEITEN-KONFIGURATION
+# SEITEN-KONFIGURATION (MUSS als erstes kommen!)
 # ============================================================
 
 st.set_page_config(
@@ -69,65 +66,40 @@ st.set_page_config(
     layout="wide"
 )
 
-
 # ============================================================
-# HUGGINGFACE DATEN-MANAGEMENT
+# DATENPFAD-MANAGEMENT
 # ============================================================
 
-@st.cache_data(ttl=86400)  # 24 Stunden cachen
-def get_available_months() -> list[str]:
-    """Holt alle verfügbaren Monate vom HuggingFace Dataset."""
+# Neu:
+DATA_DIR = "Data/deutsche_bahn_data/monthly_processed_data"
+
+
+def get_available_data_files() -> list[str]:
+    """Findet alle verfügbaren Parquet-Dateien und gibt sie sortiert zurück."""
+    pattern = os.path.join(DATA_DIR, "data-*.parquet")
+    files = glob(pattern)
+
+    # Sortiere nach Dateiname (chronologisch: data-2024-01, data-2024-02, ...)
+    files.sort(reverse=True)  # Neueste zuerst
+
+    return files
+
+
+def extract_month_label(filepath: str) -> str:
+    """Extrahiert ein lesbares Label aus dem Dateipfad (z.B. 'Oktober 2024')."""
+    filename = os.path.basename(filepath)
+    # Format: data-2024-10.parquet
     try:
-        files = list_repo_files(HF_REPO_ID, repo_type=HF_REPO_TYPE)
-        # Filter nur monthly_processed_data parquet files
-        parquet_files = [
-            f for f in files
-            if f.startswith("monthly_processed_data/data-") and f.endswith(".parquet")
-        ]
-        # Extrahiere Monatsnamen (z.B. "2024-10")
-        months = []
-        for f in parquet_files:
-            # Format: monthly_processed_data/data-2024-10.parquet
-            month = f.replace("monthly_processed_data/data-", "").replace(".parquet", "")
-            months.append(month)
-
-        # Sortiere absteigend (neueste zuerst)
-        months.sort(reverse=True)
-        return months
-    except Exception as e:
-        st.error(f"Fehler beim Laden der verfügbaren Monate: {e}")
-        return []
-
-
-@st.cache_data(ttl=86400, show_spinner="Lade Daten von HuggingFace...")
-def download_month_data(month: str) -> str:
-    """
-    Lädt die Parquet-Datei für einen bestimmten Monat von HuggingFace.
-    Gibt den lokalen Pfad zur heruntergeladenen Datei zurück.
-    """
-    filename = f"monthly_processed_data/data-{month}.parquet"
-
-    local_path = hf_hub_download(
-        repo_id=HF_REPO_ID,
-        filename=filename,
-        repo_type=HF_REPO_TYPE
-    )
-
-    return local_path
-
-
-def format_month_label(month: str) -> str:
-    """Formatiert '2024-10' zu 'Oktober 2024'."""
-    month_names = {
-        "01": "Januar", "02": "Februar", "03": "März", "04": "April",
-        "05": "Mai", "06": "Juni", "07": "Juli", "08": "August",
-        "09": "September", "10": "Oktober", "11": "November", "12": "Dezember"
-    }
-    try:
-        year, m = month.split("-")
-        return f"{month_names.get(m, m)} {year}"
-    except:
-        return month
+        parts = filename.replace("data-", "").replace(".parquet", "").split("-")
+        year, month = parts[0], int(parts[1])
+        month_names = {
+            1: "Januar", 2: "Februar", 3: "März", 4: "April",
+            5: "Mai", 6: "Juni", 7: "Juli", 8: "August",
+            9: "September", 10: "Oktober", 11: "November", 12: "Dezember"
+        }
+        return f"{month_names.get(month, 'Unbekannt')} {year}"
+    except (IndexError, ValueError):
+        return filename
 
 
 # ============================================================
@@ -145,7 +117,10 @@ def get_db_connection():
 
 
 def execute_query(query: str, params: list[Any] | None = None) -> pd.DataFrame:
-    """Führt eine Query sicher aus mit optionalen Parametern."""
+    """
+    Führt eine Query sicher aus mit optionalen Parametern.
+    Verhindert SQL Injection durch parametrisierte Queries.
+    """
     with get_db_connection() as conn:
         if params:
             return conn.execute(query, params).fetchdf()
@@ -165,33 +140,25 @@ def execute_query_single(query: str, params: list[Any] | None = None) -> tuple |
 # ============================================================
 
 st.title("🚂 Deutsche Bahn Performance Dashboard")
-st.markdown("**Live-Daten direkt von HuggingFace** | Dataset: `piebro/deutsche-bahn-data`")
 
-# Verfügbare Monate laden
-available_months = get_available_months()
+# Dynamische Dateiauswahl
+available_files = get_available_data_files()
 
-if not available_months:
-    st.error("❌ Keine Daten verfügbar. Bitte später erneut versuchen.")
+if not available_files:
+    st.error("❌ Keine Datendateien gefunden! Bitte prüfe den Pfad: " + DATA_DIR)
     st.stop()
 
 # Dropdown für Monatsauswahl
-month_options = {format_month_label(m): m for m in available_months}
-selected_month_label = st.selectbox(
+file_options = {extract_month_label(f): f for f in available_files}
+selected_month = st.selectbox(
     "📅 Zeitraum auswählen:",
-    options=list(month_options.keys()),
-    index=0
+    options=list(file_options.keys()),
+    index=0  # Neuester Monat als Default
 )
 
-selected_month = month_options[selected_month_label]
+DATA_PATH = file_options[selected_month]
 
-# Daten laden
-try:
-    DATA_PATH = download_month_data(selected_month)
-    st.success(f"✅ Daten für {selected_month_label} geladen")
-except Exception as e:
-    st.error(f"❌ Fehler beim Laden: {e}")
-    st.stop()
-
+st.markdown(f"**Datenquelle:** {selected_month}")
 st.markdown("---")
 
 # ============================================================
@@ -202,12 +169,13 @@ try:
     result = execute_query_single(f"SELECT COUNT(*) FROM '{DATA_PATH}'")
     if result:
         row_count = result[0]
-        st.info(f"📊 **{row_count:,} Zugfahrten** im ausgewählten Zeitraum")
+        st.success(f"✅ Daten geladen: {row_count:,} Zeilen")
     else:
         st.error("❌ Keine Daten gefunden.")
         st.stop()
 except Exception as e:
     st.error(f"❌ Fehler beim Laden der Daten: {e}")
+    st.info("💡 Prüfe ob die Datei existiert: " + DATA_PATH)
     st.stop()
 
 
@@ -217,7 +185,13 @@ except Exception as e:
 
 @st.cache_data(ttl=CACHE_TTL_SECONDS)
 def get_kpis(data_path: str) -> dict[str, int | float | str]:
-    """Berechnet die Haupt-KPIs für das Dashboard."""
+    """
+    Berechnet die Haupt-KPIs für das Dashboard.
+
+    Returns:
+        Dictionary mit total_fahrten, avg_delay, puenktlich_pct,
+        canceled_pct, start_datum, end_datum
+    """
     query = f"""
     SELECT
         COUNT(*) as total_fahrten,
@@ -258,6 +232,7 @@ def get_kpis(data_path: str) -> dict[str, int | float | str]:
     }
 
 
+# KPIs laden mit Error Handling
 try:
     kpis = get_kpis(DATA_PATH)
 except Exception as e:
@@ -305,7 +280,10 @@ st.markdown("---")
 
 @st.cache_data(ttl=CACHE_TTL_SECONDS)
 def get_rush_hour_stats(data_path: str) -> pd.DataFrame:
-    """Vergleicht Rush Hour Zeiten mit normalen Zeiten."""
+    """
+    Vergleicht Rush Hour Zeiten mit normalen Zeiten.
+    Nutzt konfigurierbare Zeitfenster aus Konstanten.
+    """
     morgen_start, morgen_end = RUSH_HOUR_MORGEN
     abend_start, abend_end = RUSH_HOUR_ABEND
 
@@ -358,6 +336,7 @@ with col2:
         use_container_width=True
     )
 
+# Business Insight Box
 if not rush_hour_df.empty:
     worst_time = rush_hour_df.iloc[0]["zeitfenster"]
     worst_delay = rush_hour_df.iloc[0]["avg_delay"]
@@ -377,7 +356,11 @@ st.markdown("---")
 
 @st.cache_data(ttl=CACHE_TTL_SECONDS)
 def get_weekday_stats(data_path: str) -> pd.DataFrame:
-    """Analysiert Verspätungen nach Wochentag."""
+    """
+    Analysiert Verspätungen nach Wochentag.
+    Nutzt zentrales Wochentag-Mapping.
+    """
+    # Erstelle CASE-Statement aus dem Dictionary
     case_parts = [f"WHEN {num} THEN '{name}'" for num, name in WOCHENTAGE.items()]
     case_statement = "CASE DAYOFWEEK(time) " + " ".join(case_parts) + " END"
 
@@ -420,6 +403,7 @@ with col2:
         color="#FFE66D"
     )
 
+# Bester und schlechtester Tag (mit Fehlerbehandlung)
 if not weekday_df.empty:
     best_day = weekday_df.loc[weekday_df["avg_delay"].idxmin()]
     worst_day = weekday_df.loc[weekday_df["avg_delay"].idxmax()]
@@ -434,7 +418,7 @@ st.markdown("---")
 
 
 # ============================================================
-# ZUGTYP ANALYSE MIT FILTER
+# ZUGTYP ANALYSE MIT FILTER (SQL Injection sicher)
 # ============================================================
 
 @st.cache_data(ttl=CACHE_TTL_SECONDS)
@@ -452,10 +436,17 @@ def get_train_types(data_path: str) -> list[str]:
 
 @st.cache_data(ttl=CACHE_TTL_SECONDS)
 def get_train_type_stats(data_path: str, selected_types: tuple[str, ...]) -> pd.DataFrame:
-    """Analysiert Performance nach Zugtyp."""
+    """
+    Analysiert Performance nach Zugtyp.
+
+    WICHTIG: selected_types wird als Tuple übergeben für Cache-Kompatibilität.
+    Die Query ist SQL Injection sicher durch Verwendung von list_value().
+    """
     if not selected_types:
         return pd.DataFrame()
 
+    # DuckDB-sichere Methode: Liste als Parameter
+    # Wir erstellen eine temporäre Liste in DuckDB
     types_list = list(selected_types)
     placeholders = ", ".join(["?" for _ in types_list])
 
@@ -484,16 +475,22 @@ def get_train_type_stats(data_path: str, selected_types: tuple[str, ...]) -> pd.
 
 st.subheader("🚄 Zugtyp Vergleich")
 
+# Alle Zugtypen holen
 all_train_types = get_train_types(DATA_PATH)
+
+# Validiere Default-Auswahl gegen tatsächlich vorhandene Zugtypen
 valid_defaults = [t for t in DEFAULT_TRAIN_TYPES if t in all_train_types]
 
+# Filter erstellen
 selected_types = st.multiselect(
     "Wähle Zugtypen zum Vergleichen:",
     options=all_train_types,
     default=valid_defaults if valid_defaults else all_train_types[:5]
 )
 
+# Nur anzeigen wenn mindestens ein Typ gewählt
 if selected_types:
+    # Tuple für Cache-Kompatibilität
     train_type_df = get_train_type_stats(DATA_PATH, tuple(selected_types))
 
     if not train_type_df.empty:
@@ -513,6 +510,7 @@ if selected_types:
                 color="#2ECC71"
             )
 
+        # Detaillierte Tabelle
         st.markdown("**Detaillierte Statistiken:**")
         st.dataframe(
             train_type_df,
@@ -535,10 +533,14 @@ st.subheader("📊 Erweiterte Analyse: Zugtyp × Wochentag")
 
 @st.cache_data(ttl=CACHE_TTL_SECONDS)
 def get_train_weekday_stats(data_path: str, train_types: tuple[str, ...]) -> pd.DataFrame:
-    """Durchschnittliche Verspätung pro Zugtyp pro Wochentag."""
+    """
+    Durchschnittliche Verspätung pro Zugtyp pro Wochentag.
+    SQL Injection sicher durch parametrisierte Query.
+    """
     if not train_types:
         return pd.DataFrame()
 
+    # Erstelle CASE-Statement für Wochentage
     case_parts = [f"WHEN {num} THEN '{name}'" for num, name in WOCHENTAGE_KURZ.items()]
     case_statement = "CASE DAYOFWEEK(time) " + " ".join(case_parts) + " END"
 
@@ -562,6 +564,7 @@ def get_train_weekday_stats(data_path: str, train_types: tuple[str, ...]) -> pd.
     return execute_query(query, types_list)
 
 
+# Auswahl für erweiterte Analyse
 extended_analysis_types = st.multiselect(
     "Zugtypen für erweiterte Analyse:",
     options=all_train_types,
@@ -580,12 +583,14 @@ if extended_analysis_types:
             use_container_width=True
         )
 
+        # Pivot-Tabelle für Heatmap-Ansicht
         pivot_df = train_weekday_df.pivot(
             index="train_type",
             columns="wochentag",
             values="avg_delay"
         )
 
+        # Sortiere Spalten nach Wochentag-Reihenfolge
         weekday_order = list(WOCHENTAGE_KURZ.values())
         pivot_df = pivot_df[[col for col in weekday_order if col in pivot_df.columns]]
 
@@ -605,23 +610,24 @@ st.markdown("---")
 st.markdown(f"""
 ### 📝 Über dieses Dashboard
 
-**Datenquelle:** [piebro/deutsche-bahn-data](https://huggingface.co/datasets/piebro/deutsche-bahn-data) auf HuggingFace  
-**Aktueller Zeitraum:** {selected_month_label}  
+**Datenquelle:** Deutsche Bahn API via HuggingFace  
+**Aktueller Zeitraum:** {selected_month}  
 **Datenpunkte:** {kpis['total_fahrten']:,} Zugfahrten
 
 **Konfiguration:**
 - Pünktlichkeitsschwelle: ≤{PUENKTLICH_THRESHOLD_MIN} Minuten
 - Verspätungsschwelle: >{VERSPAETET_THRESHOLD_MIN} Minuten
-- Daten-Cache: 24 Stunden
+- Cache TTL: {CACHE_TTL_SECONDS // 60} Minuten
 
-**Erstellt von:** Sebastian Kühnrich  
-**Technologien:** Python, DuckDB, Streamlit, HuggingFace Hub
+**Erstellt von:** Big Data Team  
+**Technologien:** Python, DuckDB, Streamlit
 
 ---
 
-*Dieses Dashboard wurde im Rahmen des Big Data Moduls erstellt.*
+*Dieses Dashboard wurde im Rahmen des Big Data Moduls bei Morpheus GmbH erstellt.*
 """)
 
+# Rohdaten anzeigen (optional, ausklappbar)
 with st.expander("🔍 Rohdaten anzeigen (erste 100 Zeilen)"):
     try:
         sample = execute_query(f"SELECT * FROM '{DATA_PATH}' LIMIT 100")
@@ -629,8 +635,16 @@ with st.expander("🔍 Rohdaten anzeigen (erste 100 Zeilen)"):
     except Exception as e:
         st.error(f"Fehler beim Laden der Rohdaten: {e}")
 
+# Debug-Info (nur für Entwickler)
 with st.expander("🔧 Debug-Informationen"):
     st.write("**Datenpfad:**", DATA_PATH)
-    st.write("**Verfügbare Monate:**", len(available_months))
+    st.write("**Verfügbare Dateien:**", len(available_files))
     st.write("**Verfügbare Zugtypen:**", len(all_train_types))
-    st.write("**HuggingFace Repo:**", HF_REPO_ID)
+    st.write("**Konfigurierte Konstanten:**")
+    st.json({
+        "PUENKTLICH_THRESHOLD_MIN": PUENKTLICH_THRESHOLD_MIN,
+        "VERSPAETET_THRESHOLD_MIN": VERSPAETET_THRESHOLD_MIN,
+        "RUSH_HOUR_MORGEN": RUSH_HOUR_MORGEN,
+        "RUSH_HOUR_ABEND": RUSH_HOUR_ABEND,
+        "CACHE_TTL_SECONDS": CACHE_TTL_SECONDS,
+    })
