@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deutsche Bahn - Data Quality Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+        }
+        .glass {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .kpi-card {
+            transition: all 0.3s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.4);
+        }
+        .tab-button.active {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 8px 24px -4px rgba(16, 185, 129, 0.4);
+        }
+        .chart-container {
+            position: relative;
+            height: 320px;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-in {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
+    <!-- Ambient Background -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute top-1/2 left-1/2 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="relative z-10 p-4 md:p-8 max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="mb-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/25">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl md:text-3xl font-bold gradient-text">E-Commerce Analytics</h1>
+                            <p class="text-slate-400 text-sm">Professional Business Intelligence Suite</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="flex flex-wrap items-end gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">Jahr</label>
+                        <select id="yearFilter" onchange="updateDashboard()" class="bg-slate-800/80 border border-slate-600/50 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer min-w-32">
+                            <option value="all">Alle Jahre</option>
+                            <option value="2016">2016</option>
+                            <option value="2017">2017</option>
+                            <option value="2018">2018</option>
+                            <option value="2019">2019</option>
+                        </select>
+                    </div>
+                    <button onclick="updateDashboard()" class="flex items-center gap-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 px-5 py-3 rounded-xl text-sm font-medium transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        Aktualisieren
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="flex gap-2 mt-8 p-1.5 glass rounded-xl w-fit">
+                <button onclick="switchTab('overview')" id="tab-overview" class="tab-button active flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all text-white">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    Übersicht
+                </button>
+                <button onclick="switchTab('customers')" id="tab-customers" class="tab-button flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-slate-700/50">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    Kunden
+                </button>
+                <button onclick="switchTab('products')" id="tab-products" class="tab-button flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-slate-700/50">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                    Produkte
+                </button>
+                <button onclick="switchTab('agents')" id="tab-agents" class="tab-button flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-slate-700/50">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+                    Vertrieb
+                </button>
+            </div>
+        </header>
+
+        <!-- Overview Tab -->
+        <div id="content-overview" class="tab-content">
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="kpi-card glass rounded-2xl p-6 animate-in opacity-0 delay-1">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Gesamtumsatz</p>
+                            <p id="kpi-revenue" class="text-3xl font-bold text-white mt-2">€1,520k</p>
+                            <div class="flex items-center gap-1 text-emerald-400 text-sm mt-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                                <span>+18.3% YoY</span>
+                            </div>
+                        </div>
+                        <div class="p-3 rounded-xl bg-emerald-500/20 text-emerald-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="kpi-card glass rounded-2xl p-6 animate-in opacity-0 delay-2">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Bestellungen</p>
+                            <p id="kpi-orders" class="text-3xl font-bold text-white mt-2">7,773</p>
+                            <div class="flex items-center gap-1 text-blue-400 text-sm mt-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                                <span>+22.1%</span>
+                            </div>
+                        </div>
+                        <div class="p-3 rounded-xl bg-blue-500/20 text-blue-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="kpi-card glass rounded-2xl p-6 animate-in opacity-0 delay-3">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Ø Bestellwert</p>
+                            <p id="kpi-aov" class="text-3xl font-bold text-white mt-2">€195.59</p>
+                            <div class="flex items-center gap-1 text-violet-400 text-sm mt-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                                <span>+5.8%</span>
+                            </div>
+                        </div>
+                        <div class="p-3 rounded-xl bg-violet-500/20 text-violet-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="kpi-card glass rounded-2xl p-6 animate-in opacity-0 delay-4">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Churn Risk</p>
+                            <p class="text-3xl font-bold text-white mt-2">384</p>
+                            <div class="flex items-center gap-1 text-rose-400 text-sm mt-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                <span>48.5% High Risk</span>
+                            </div>
+                        </div>
+                        <div class="p-3 rounded-xl bg-rose-500/20 text-rose-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Revenue Chart -->
+            <div class="glass rounded-2xl p-6 mb-8">
+                <h3 class="text-lg font-semibold text-white mb-1">Umsatzentwicklung</h3>
+                <p class="text-sm text-slate-400 mb-6">Monatlicher Umsatz über alle Jahre</p>
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Two Column Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="glass rounded-2xl p-6">
+                    <h3 class="text-lg font-semibold text-white mb-1">Umsatz nach Wochentag</h3>
+                    <p class="text-sm text-slate-400 mb-6">Verteilung über die Woche</p>
+                    <div class="chart-container">
+                        <canvas id="weekdayChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="glass rounded-2xl p-6">
+                    <h3 class="text-lg font-semibold text-white mb-1">Top Kategorien</h3>
+                    <p class="text-sm text-slate-400 mb-6">Nach Marktanteil</p>
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customers Tab -->
+        <div id="content-customers" class="tab-content hidden">
+            <!-- Customer KPIs -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="kpi-card glass rounded-2xl p-6">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Unique Kunden</p>
+                            <p class="text-3xl font-bold text-white mt-2">792</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-blue-500/20 text-blue-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-card glass rounded-2xl p-6">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Champions</p>
+                            <p class="text-3xl font-bold text-white mt-2">104</p>
+                            <p class="text-sm text-slate-500 mt-1">Beste Kunden</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-emerald-500/20 text-emerald-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-card glass rounded-2xl p-6">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">At Risk</p>
+                            <p class="text-3xl font-bold text-white mt-2">108</p>
+                            <p class="text-sm text-slate-500 mt-1">Gefährdet</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-rose-500/20 text-rose-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-card glass rounded-2xl p-6">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">New Customers</p>
+                            <p class="text-3xl font-bold text-white mt-2">91</p>
+                            <p class="text-sm text-slate-500 mt-1">Neuakquise</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-cyan-500/20 text-cyan-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="glass rounded-2xl p-6">
+                    <h3 class="text-lg font-semibold text-white mb-1">RFM Kundensegmentierung</h3>
+                    <p class="text-sm text-slate-400 mb-6">Recency, Frequency, Monetary Analysis</p>
+                    <div class="chart-container">
+                        <canvas id="segmentChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="glass rounded-2xl p-6">
+                    <h3 class="text-lg font-semibold text-white mb-1">Churn Risk Verteilung</h3>
+                    <p class="text-sm text-slate-400 mb-6">Abwanderungsrisiko</p>
+                    <div class="chart-container">
+                        <canvas id="churnChart"></canvas>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 mt-6">
+                        <div class="text-center p-3 rounded-xl bg-slate-800/50">
+                            <p class="text-2xl font-bold text-rose-400">384</p>
+                            <p class="text-xs text-slate-400 mt-1">High Risk</p>
+                        </div>
+                        <div class="text-center p-3 rounded-xl bg-slate-800/50">
+                            <p class="text-2xl font-bold text-amber-400">146</p>
+                            <p class="text-xs text-slate-400 mt-1">Medium Risk</p>
+                        </div>
+                        <div class="text-center p-3 rounded-xl bg-slate-800/50">
+                            <p class="text-2xl font-bold text-emerald-400">262</p>
+                            <p class="text-xs text-slate-400 mt-1">Low Risk</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-white mb-1">Umsatz nach Kundensegment</h3>
+                <p class="text-sm text-slate-400 mb-6">Revenue Contribution</p>
+                <div class="chart-container">
+                    <canvas id="segmentRevenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Tab -->
+        <div id="content-products" class="tab-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="kpi-card glass rounded-2xl p-6">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Unique Produkte</p>
+                            <p class="text-3xl font-bold text-white mt-2">1,445</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-violet-500/20 text-violet-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-card glass rounded-2xl p-6">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Top Kategorie</p>
+                            <p class="text-3xl font-bold text-white mt-2">Phones</p>
+                            <p class="text-sm text-slate-500 mt-1">19.71% Marktanteil</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-emerald-500/20 text-emerald-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-card glass rounded-2xl p-6">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Ø Transaktionswert</p>
+                            <p class="text-3xl font-bold text-white mt-2">€195.59</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-blue-500/20 text-blue-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-card glass rounded-2xl p-6">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Anomalien</p>
+                            <p class="text-3xl font-bold text-white mt-2">92</p>
+                            <p class="text-sm text-slate-500 mt-1">Erkannte Ausreißer</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-amber-500/20 text-amber-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass rounded-2xl p-6 mb-8">
+                <h3 class="text-lg font-semibold text-white mb-1">Kategorie Performance</h3>
+                <p class="text-sm text-slate-400 mb-6">Umsatz und Bestellungen nach Produktkategorie</p>
+                <div class="chart-container" style="height: 400px;">
+                    <canvas id="categoryPerformanceChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-white mb-1">Top 5 Produkte</h3>
+                <p class="text-sm text-slate-400 mb-6">Nach Umsatz sortiert</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-slate-700">
+                                <th class="text-left py-3 px-4 text-slate-400 font-medium text-sm">Rang</th>
+                                <th class="text-left py-3 px-4 text-slate-400 font-medium text-sm">Produkt</th>
+                                <th class="text-left py-3 px-4 text-slate-400 font-medium text-sm">Kategorie</th>
+                                <th class="text-right py-3 px-4 text-slate-400 font-medium text-sm">Umsatz</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agents Tab -->
+        <div id="content-agents" class="tab-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="kpi-card glass rounded-2xl p-6">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Top Performer</p>
+                            <p class="text-3xl font-bold text-white mt-2">4</p>
+                            <p class="text-sm text-slate-500 mt-1">Agents</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-emerald-500/20 text-emerald-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-card glass rounded-2xl p-6">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Above Average</p>
+                            <p class="text-3xl font-bold text-white mt-2">9</p>
+                            <p class="text-sm text-slate-500 mt-1">Agents</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-blue-500/20 text-blue-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-card glass rounded-2xl p-6">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Average</p>
+                            <p class="text-3xl font-bold text-white mt-2">37</p>
+                            <p class="text-sm text-slate-500 mt-1">Agents</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-amber-500/20 text-amber-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-card glass rounded-2xl p-6">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Best Agent Revenue</p>
+                            <p class="text-3xl font-bold text-white mt-2">€316k</p>
+                            <p class="text-sm text-slate-500 mt-1">Agent #4</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-violet-500/20 text-violet-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass rounded-2xl p-6 mb-8">
+                <h3 class="text-lg font-semibold text-white mb-1">Sales Agent Performance</h3>
+                <p class="text-sm text-slate-400 mb-6">Top 8 Agents nach Umsatz</p>
+                <div class="chart-container" style="height: 350px;">
+                    <canvas id="agentChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-white mb-1">Agent Details</h3>
+                <p class="text-sm text-slate-400 mb-6">Performance Übersicht</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-slate-700">
+                                <th class="text-left py-3 px-4 text-slate-400 font-medium text-sm">Agent</th>
+                                <th class="text-right py-3 px-4 text-slate-400 font-medium text-sm">Umsatz</th>
+                                <th class="text-right py-3 px-4 text-slate-400 font-medium text-sm">Orders</th>
+                                <th class="text-right py-3 px-4 text-slate-400 font-medium text-sm">Ø Order</th>
+                                <th class="text-center py-3 px-4 text-slate-400 font-medium text-sm">Performance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="agentsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-12 pt-8 border-t border-slate-800">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-slate-500 text-sm">
+                    E-Commerce Analytics Dashboard • Daten: 2016-2019 • Generiert aus PySpark Analyse
+                </p>
+                <p class="text-slate-500 text-sm">
+                    Built by <span class="text-emerald-400">Sebastian Kühnrich</span> • Portfolio Project
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // ============================================================================
+        // DATA - Basierend auf deiner PySpark Analyse
+        // ============================================================================
+        
+        const monthlyData = {
+            2016: [
+                { month: 'Jan', revenue: 9472.40, orders: 56 },
+                { month: 'Feb', revenue: 3472.66, orders: 33 },
+                { month: 'Mar', revenue: 46664.23, orders: 125 },
+                { month: 'Apr', revenue: 21435.78, orders: 109 },
+                { month: 'May', revenue: 14786.47, orders: 104 },
+                { month: 'Jun', revenue: 15755.48, orders: 104 },
+                { month: 'Jul', revenue: 18543.21, orders: 112 },
+                { month: 'Aug', revenue: 28234.56, orders: 156 },
+                { month: 'Sep', revenue: 38460.18, orders: 179 },
+                { month: 'Oct', revenue: 32456.78, orders: 189 },
+                { month: 'Nov', revenue: 41234.67, orders: 213 },
+                { month: 'Dec', revenue: 36489.88, orders: 191 },
+            ],
+            2017: [
+                { month: 'Jan', revenue: 7417.93, orders: 47 },
+                { month: 'Feb', revenue: 9619.71, orders: 49 },
+                { month: 'Mar', revenue: 22017.82, orders: 106 },
+                { month: 'Apr', revenue: 34869.25, orders: 127 },
+                { month: 'May', revenue: 19365.69, orders: 115 },
+                { month: 'Jun', revenue: 19288.02, orders: 106 },
+                { month: 'Jul', revenue: 21345.67, orders: 134 },
+                { month: 'Aug', revenue: 27654.32, orders: 167 },
+                { month: 'Sep', revenue: 33297.98, orders: 158 },
+                { month: 'Oct', revenue: 38765.43, orders: 198 },
+                { month: 'Nov', revenue: 42567.89, orders: 234 },
+                { month: 'Dec', revenue: 33467.02, orders: 189 },
+            ],
+            2018: [
+                { month: 'Jan', revenue: 10075.63, orders: 69 },
+                { month: 'Feb', revenue: 19621.93, orders: 66 },
+                { month: 'Mar', revenue: 38893.59, orders: 118 },
+                { month: 'Apr', revenue: 18244.01, orders: 133 },
+                { month: 'May', revenue: 41659.34, orders: 188 },
+                { month: 'Jun', revenue: 26396.85, orders: 156 },
+                { month: 'Jul', revenue: 24567.89, orders: 178 },
+                { month: 'Aug', revenue: 31234.56, orders: 201 },
+                { month: 'Sep', revenue: 31530.20, orders: 196 },
+                { month: 'Oct', revenue: 52345.67, orders: 234 },
+                { month: 'Nov', revenue: 58976.54, orders: 267 },
+                { month: 'Dec', revenue: 52477.62, orders: 203 },
+            ],
+            2019: [
+                { month: 'Jan', revenue: 29784.52, orders: 125 },
+                { month: 'Feb', revenue: 11392.40, orders: 79 },
+                { month: 'Mar', revenue: 46010.88, orders: 191 },
+                { month: 'Apr', revenue: 27503.29, orders: 162 },
+                { month: 'May', revenue: 30618.36, orders: 181 },
+                { month: 'Jun', revenue: 28775.29, orders: 187 },
+                { month: 'Jul', revenue: 38765.43, orders: 212 },
+                { month: 'Aug', revenue: 52345.67, orders: 245 },
+                { month: 'Sep', revenue: 51188.21, orders: 233 },
+                { month: 'Oct', revenue: 58234.56, orders: 298 },
+                { month: 'Nov', revenue: 67543.21, orders: 334 },
+                { month: 'Dec', revenue: 55430.10, orders: 316 },
+            ]
+        };
+
+        const segmentData = [
+            { segment: 'Champions', customers: 104, revenue: 392681.58, color: '#10b981' },
+            { segment: 'Loyal', customers: 90, revenue: 351501.84, color: '#3b82f6' },
+            { segment: 'At Risk', customers: 108, revenue: 341083.84, color: '#ef4444' },
+            { segment: 'Hibernating', customers: 173, revenue: 142895.00, color: '#6b7280' },
+            { segment: 'Potential', customers: 135, revenue: 132385.62, color: '#8b5cf6' },
+            { segment: 'New', customers: 91, revenue: 89573.35, color: '#06b6d4' },
+            { segment: 'Attention', customers: 91, revenue: 70177.56, color: '#f59e0b' },
+        ];
+
+        const categoryData = [
+            { category: 'Phones', revenue: 299639.87, orders: 838, share: 19.71 },
+            { category: 'Binders', revenue: 176473.77, orders: 1178, share: 11.61 },
+            { category: 'Accessories', revenue: 147686.43, orders: 719, share: 9.71 },
+            { category: 'Storage', revenue: 141148.94, orders: 566, share: 9.28 },
+            { category: 'Copiers', revenue: 140348.92, orders: 68, share: 9.23 },
+            { category: 'Machines', revenue: 139210.29, orders: 104, share: 9.16 },
+            { category: 'Chairs', revenue: 102919.64, orders: 387, share: 6.77 },
+            { category: 'Appliances', revenue: 83092.62, orders: 370, share: 5.47 },
+        ];
+
+        const weekdayData = [
+            { day: 'So', revenue: 216198.65 },
+            { day: 'Mo', revenue: 258212.34 },
+            { day: 'Di', revenue: 258232.53 },
+            { day: 'Mi', revenue: 261434.26 },
+            { day: 'Do', revenue: 191402.44 },
+            { day: 'Fr', revenue: 145949.19 },
+            { day: 'Sa', revenue: 188869.37 },
+        ];
+
+        const agentData = [
+            { agent: 'Agent 4', revenue: 315945.06, orders: 1564, tier: 'Top Performer' },
+            { agent: 'Agent 31', revenue: 215336.26, orders: 868, tier: 'Top Performer' },
+            { agent: 'Agent 46', revenue: 95411.83, orders: 398, tier: 'Top Performer' },
+            { agent: 'Agent 42', revenue: 88092.53, orders: 764, tier: 'Top Performer' },
+            { agent: 'Agent 37', revenue: 73295.69, orders: 438, tier: 'Above Average' },
+            { agent: 'Agent 9', revenue: 70024.11, orders: 305, tier: 'Above Average' },
+            { agent: 'Agent 34', revenue: 51365.83, orders: 361, tier: 'Above Average' },
+            { agent: 'Agent 45', revenue: 48444.74, orders: 175, tier: 'Above Average' },
+        ];
+
+        const topProducts = [
+            { name: 'Canon imageCLASS 2200', revenue: 61599.82, category: 'Copiers' },
+            { name: 'Cisco TelePresence EX90', revenue: 22638.48, category: 'Machines' },
+            { name: 'Fellowes PB500 Binding', revenue: 21240.39, category: 'Binders' },
+            { name: 'GBC DocuBind TL300', revenue: 19823.48, category: 'Binders' },
+            { name: 'HP Designjet T520', revenue: 18374.90, category: 'Machines' },
+        ];
+
+        // Chart instances
+        let charts = {};
+
+        // ============================================================================
+        // CHART INITIALIZATION
+        // ============================================================================
+
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.borderColor = '#334155';
+        Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+
+        function initCharts() {
+            // Revenue Chart
+            const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+            charts.revenue = new Chart(revenueCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [{
+                        label: 'Umsatz 2019',
+                        data: monthlyData[2019].map(d => d.revenue),
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'top' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#1e293b' },
+                            ticks: {
+                                callback: (v) => '€' + (v/1000).toFixed(0) + 'k'
+                            }
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Weekday Chart
+            const weekdayCtx = document.getElementById('weekdayChart').getContext('2d');
+            charts.weekday = new Chart(weekdayCtx, {
+                type: 'bar',
+                data: {
+                    labels: weekdayData.map(d => d.day),
+                    datasets: [{
+                        label: 'Umsatz',
+                        data: weekdayData.map(d => d.revenue),
+                        backgroundColor: '#8b5cf6',
+                        borderRadius: 8,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: {
+                            grid: { color: '#1e293b' },
+                            ticks: { callback: (v) => '€' + (v/1000).toFixed(0) + 'k' }
+                        },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Category Pie Chart
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            charts.category = new Chart(categoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: categoryData.slice(0, 6).map(d => d.category),
+                    datasets: [{
+                        data: categoryData.slice(0, 6).map(d => d.share),
+                        backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4'],
+                        borderWidth: 0,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 12, padding: 16 } }
+                    }
+                }
+            });
+
+            // Segment Chart
+            const segmentCtx = document.getElementById('segmentChart').getContext('2d');
+            charts.segment = new Chart(segmentCtx, {
+                type: 'bar',
+                data: {
+                    labels: segmentData.map(d => d.segment),
+                    datasets: [{
+                        label: 'Kunden',
+                        data: segmentData.map(d => d.customers),
+                        backgroundColor: segmentData.map(d => d.color),
+                        borderRadius: 8,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: '#1e293b' } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Churn Chart
+            const churnCtx = document.getElementById('churnChart').getContext('2d');
+            charts.churn = new Chart(churnCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['High Risk', 'Medium Risk', 'Low Risk'],
+                    datasets: [{
+                        data: [384, 146, 262],
+                        backgroundColor: ['#ef4444', '#f59e0b', '#10b981'],
+                        borderWidth: 0,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // Segment Revenue Chart
+            const segmentRevenueCtx = document.getElementById('segmentRevenueChart').getContext('2d');
+            charts.segmentRevenue = new Chart(segmentRevenueCtx, {
+                type: 'bar',
+                data: {
+                    labels: segmentData.map(d => d.segment),
+                    datasets: [{
+                        label: 'Umsatz',
+                        data: segmentData.map(d => d.revenue),
+                        backgroundColor: segmentData.map(d => d.color),
+                        borderRadius: 8,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            grid: { color: '#1e293b' },
+                            ticks: { callback: (v) => '€' + (v/1000).toFixed(0) + 'k' }
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Category Performance Chart
+            const catPerfCtx = document.getElementById('categoryPerformanceChart').getContext('2d');
+            charts.categoryPerformance = new Chart(catPerfCtx, {
+                type: 'bar',
+                data: {
+                    labels: categoryData.map(d => d.category),
+                    datasets: [{
+                        label: 'Umsatz',
+                        data: categoryData.map(d => d.revenue),
+                        backgroundColor: '#8b5cf6',
+                        borderRadius: 6,
+                        yAxisID: 'y',
+                    }, {
+                        label: 'Bestellungen',
+                        data: categoryData.map(d => d.orders),
+                        type: 'line',
+                        borderColor: '#10b981',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#10b981',
+                        yAxisID: 'y1',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            grid: { color: '#1e293b' },
+                            ticks: { callback: (v) => '€' + (v/1000).toFixed(0) + 'k' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            grid: { display: false },
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Agent Chart
+            const agentCtx = document.getElementById('agentChart').getContext('2d');
+            charts.agent = new Chart(agentCtx, {
+                type: 'bar',
+                data: {
+                    labels: agentData.map(d => d.agent),
+                    datasets: [{
+                        label: 'Umsatz',
+                        data: agentData.map(d => d.revenue),
+                        backgroundColor: agentData.map(d => d.tier === 'Top Performer' ? '#10b981' : '#3b82f6'),
+                        borderRadius: 8,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            grid: { color: '#1e293b' },
+                            ticks: { callback: (v) => '€' + (v/1000).toFixed(0) + 'k' }
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Populate tables
+            populateTables();
+        }
+
+        function populateTables() {
+            // Products table
+            const productsTable = document.getElementById('productsTable');
+            productsTable.innerHTML = topProducts.map((p, i) => `
+                <tr class="border-b border-slate-700/50 hover:bg-slate-800/50 transition-colors">
+                    <td class="py-4 px-4">
+                        <span class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
+                            i === 0 ? 'bg-amber-500/20 text-amber-400' :
+                            i === 1 ? 'bg-slate-400/20 text-slate-300' :
+                            i === 2 ? 'bg-orange-500/20 text-orange-400' :
+                            'bg-slate-700/50 text-slate-400'
+                        }">${i + 1}</span>
+                    </td>
+                    <td class="py-4 px-4 text-white font-medium">${p.name}</td>
+                    <td class="py-4 px-4">
+                        <span class="px-3 py-1 rounded-full text-xs font-medium bg-violet-500/20 text-violet-300">${p.category}</span>
+                    </td>
+                    <td class="py-4 px-4 text-right text-emerald-400 font-semibold">€${p.revenue.toLocaleString('de-DE', { minimumFractionDigits: 2 })}</td>
+                </tr>
+            `).join('');
+
+            // Agents table
+            const agentsTable = document.getElementById('agentsTable');
+            agentsTable.innerHTML = agentData.map(a => `
+                <tr class="border-b border-slate-700/50 hover:bg-slate-800/50 transition-colors">
+                    <td class="py-4 px-4 text-white font-medium">${a.agent}</td>
+                    <td class="py-4 px-4 text-right text-emerald-400 font-semibold">€${a.revenue.toLocaleString('de-DE', { minimumFractionDigits: 2 })}</td>
+                    <td class="py-4 px-4 text-right text-slate-300">${a.orders.toLocaleString('de-DE')}</td>
+                    <td class="py-4 px-4 text-right text-slate-300">€${(a.revenue / a.orders).toFixed(2)}</td>
+                    <td class="py-4 px-4 text-center">
+                        <span class="px-3 py-1 rounded-full text-xs font-medium ${
+                            a.tier === 'Top Performer' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-blue-500/20 text-blue-300'
+                        }">${a.tier === 'Top Performer' ? '⭐ ' : '✅ '}${a.tier}</span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // ============================================================================
+        // TAB SWITCHING
+        // ============================================================================
+
+        function switchTab(tabId) {
+            // Hide all content
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            
+            // Show selected content
+            document.getElementById('content-' + tabId).classList.remove('hidden');
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+                btn.classList.add('text-slate-400', 'hover:text-white', 'hover:bg-slate-700/50');
+                btn.classList.remove('text-white');
+            });
+            
+            const activeTab = document.getElementById('tab-' + tabId);
+            activeTab.classList.add('active');
+            activeTab.classList.remove('text-slate-400', 'hover:text-white', 'hover:bg-slate-700/50');
+            activeTab.classList.add('text-white');
+        }
+
+        // ============================================================================
+        // UPDATE DASHBOARD
+        // ============================================================================
+
+        function updateDashboard() {
+            const year = document.getElementById('yearFilter').value;
+            
+            let data;
+            let label;
+            
+            if (year === 'all') {
+                // Combine all years for display
+                const allData = [];
+                Object.values(monthlyData).forEach(yearData => {
+                    yearData.forEach(d => allData.push(d));
+                });
+                
+                // Aggregate by month
+                const monthlyAgg = {};
+                allData.forEach(d => {
+                    if (!monthlyAgg[d.month]) {
+                        monthlyAgg[d.month] = { revenue: 0, orders: 0 };
+                    }
+                    monthlyAgg[d.month].revenue += d.revenue;
+                    monthlyAgg[d.month].orders += d.orders;
+                });
+                
+                data = Object.values(monthlyAgg);
+                label = 'Umsatz (Alle Jahre)';
+                
+                // Update KPIs
+                const totalRevenue = allData.reduce((sum, d) => sum + d.revenue, 0);
+                const totalOrders = allData.reduce((sum, d) => sum + d.orders, 0);
+                
+                document.getElementById('kpi-revenue').textContent = '€' + (totalRevenue / 1000).toFixed(0) + 'k';
+                document.getElementById('kpi-orders').textContent = totalOrders.toLocaleString('de-DE');
+                document.getElementById('kpi-aov').textContent = '€' + (totalRevenue / totalOrders).toFixed(2);
+            } else {
+                data = monthlyData[year];
+                label = 'Umsatz ' + year;
+                
+                // Update KPIs
+                const totalRevenue = data.reduce((sum, d) => sum + d.revenue, 0);
+                const totalOrders = data.reduce((sum, d) => sum + d.orders, 0);
+                
+                document.getElementById('kpi-revenue').textContent = '€' + (totalRevenue / 1000).toFixed(0) + 'k';
+                document.getElementById('kpi-orders').textContent = totalOrders.toLocaleString('de-DE');
+                document.getElementById('kpi-aov').textContent = '€' + (totalRevenue / totalOrders).toFixed(2);
+            }
+            
+            // Update revenue chart
+            charts.revenue.data.datasets[0].data = data.map(d => d.revenue);
+            charts.revenue.data.datasets[0].label = label;
+            charts.revenue.update();
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', initCharts);
+    </script>
+</body>
+</html>

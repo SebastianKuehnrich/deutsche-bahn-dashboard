@@ -1,0 +1,47 @@
+================================================================================
+DATENBEREINIGUNG - LOG
+Datum: 2025-12-08 11:19:00
+================================================================================
+
+[11:19:00] INFO: Lade Originaldaten...
+[11:19:02] INFO: Originaldaten geladen: 1,984,484 Zeilen
+[11:19:02] PROBLEM 1: Behebe fehlende Bahnhofsnamen
+[11:19:02] FOUND: Fehlende station_name (Betroffene Zeilen: 35,757)
+[11:19:02] FIXED: Gefüllt mit xml_station_name (Betroffene Zeilen: 35,757)
+[11:19:02] PROBLEM 2: Behebe negative Verspätungen
+[11:19:02] FOUND: Extreme negative (< -1000 min) (Betroffene Zeilen: 2)
+[11:19:02] FOUND: Inakzeptabel negative (< -30 min) (Betroffene Zeilen: 194)
+[11:19:02] FOUND: Akzeptabel negative (>= -30 min) (Betroffene Zeilen: 46,039)
+[11:19:02] FIXED: Extreme negative auf 0 gesetzt (Betroffene Zeilen: 2)
+[11:19:02] FIXED: Auf -30 min begrenzt (Betroffene Zeilen: 194)
+[11:19:02] PROBLEM 3: Behebe extreme Verspätungen
+[11:19:02] FOUND: Extreme Delays (> 180 min) (Betroffene Zeilen: 302)
+[11:19:02] FIXED: Als storniert markiert + Delay auf 0 (Betroffene Zeilen: 302)
+[11:19:02] PROBLEM 4: Behebe Logik-Inkonsistenzen
+[11:19:02] FOUND: Storniert + Verspätung (Betroffene Zeilen: 25,167)
+[11:19:02] FIXED: Verspätung von stornierten Zügen auf 0 gesetzt (Betroffene Zeilen: 25,167)
+[11:19:02] PROBLEM 5: Behebe doppelte Ride IDs
+[11:19:03] FOUND: Duplikate bei train_line_ride_id (Betroffene Zeilen: 1,951,746)
+[11:19:03] FIXED: Ältere Duplikate entfernt (neueste behalten) (Betroffene Zeilen: 1,951,746)
+[11:19:03] PROBLEM 6: Analysiere fehlende Zeitstempel
+[11:19:03] FOUND: Fehlende arrival_planned_time (Betroffene Zeilen: 6,659)
+[11:19:03] FOUND: Fehlende departure_planned_time (Betroffene Zeilen: 15,059)
+[11:19:03] INFO: Potenzielle Endhaltestellen: 15,059
+[11:19:03] INFO: Potenzielle Starthaltestellen: 6,659
+[11:19:03] INFO: Beide Zeiten fehlen: 0
+[11:19:03] DECISION: Flags hinzugefügt statt Deletion (Daten bleiben erhalten)
+[11:19:03] BONUS: Zusätzliche Qualitätsverbesserungen
+[11:19:04] INFO: String-Spalten getrimmt: 8
+[11:19:04] VALIDATION: Validiere bereinigte Daten
+[11:19:04] CHECK: Negative Delays < -30 (Betroffene Zeilen: 0)
+[11:19:04] CHECK: Storniert + Verspätung (Betroffene Zeilen: 0)
+[11:19:04] CHECK: Extreme Delays ohne Stornierung (Betroffene Zeilen: 0)
+[11:19:04] CHECK: NULL station_name (Betroffene Zeilen: 0)
+[11:19:04] SUCCESS: ✅ Alle Validierungen bestanden!
+[11:19:04] EXPORT: Speichere bereinigte Daten...
+[11:19:04] SUCCESS: Datei gespeichert: ../Data/deutsche_bahn_data/monthly_processed_data/data-2024-10-CLEANED.parquet
+[11:19:04] INFO: Dateigröße: 2.2 MB
+
+================================================================================
+Abgeschlossen: 11:19:04
+Dauer: 3.14 Sekunden

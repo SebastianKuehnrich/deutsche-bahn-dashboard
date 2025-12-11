@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="554fe0cd-0036-4abe-b855-ce2d3fe73237" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/Big_Data_Deutsche_Bahn.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.agent.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.edit.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.streamlit/config.toml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/BONUS3_ABGESCHLOSSEN.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/DASHBOARD_START_GUIDE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/DATENBEREINIGUNG_ZUSAMMENFASSUNG.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/DATENQUALITAETSANALYSE_ZUSAMMENFASSUNG.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/DATENQUALITAETS_BERICHT.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/PROJEKT_CHECKLISTE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/PROJEKT_STATUS.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Procfile" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/README_DASHBOARD.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Scripts/Aggregation.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Scripts/Dashboard.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Scripts/data_cleaning.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Scripts/data_detective_analyse.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Scripts/download_data.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Scripts/main.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Scripts/transformation.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Scripts/use_clean_data.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Tag12_Review_ANTWORTEN.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/db_dashboard.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/railway.toml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 2
+}</component>
+  <component name="ProjectId" id="36YTozGSQIkLv6ZAi4dCkOmL9Yw" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.Aggregation.executor": "Run",
+    "Python.data_detective_analyse.executor": "Run",
+    "Python.download_data.executor": "Run",
+    "Python.main.executor": "Run",
+    "Python.transformation.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "master"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\sebas\PycharmProjects\Big_Data_Deutsche_Bahn\Scripts" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="Aggregation" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Big_Data_Deutsche_Bahn" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Scripts" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Scripts/Aggregation.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.Aggregation" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-4e2b1448bda8-9a97661f3031-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-252.27397.106" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="554fe0cd-0036-4abe-b855-ce2d3fe73237" name="Changes" comment="" />
+      <created>1765182683838</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1765182683838</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Scripts/main.py</url>
+          <line>8</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>
