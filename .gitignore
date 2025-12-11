@@ -43,13 +43,5 @@ Thumbs.db
 # Logs
 *.log
 
-# Data: Alles ignorieren, außer einer kleinen Sample-Datei für das Dashboard
-Data/
-!Data/deutsche_bahn_data/
-Data/deutsche_bahn_data/*
-!Data/deutsche_bahn_data/monthly_processed_data/
-Data/deutsche_bahn_data/monthly_processed_data/*
-!Data/deutsche_bahn_data/monthly_processed_data/data-2024-10-SAMPLE.parquet
-
 # Cache
 .cache/
